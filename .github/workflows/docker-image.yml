@@ -1,0 +1,77 @@
+name: Docker Build and Export
+
+# 触发条件：手动触发（推荐，避免自动运行）+ develop/master 分支推送
+on:
+  workflow_dispatch:  # 手动触发，在 Actions 页面点 "Run workflow" 即可
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  docker-build-export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+      actions: read  # 新增：允许上传 artifact
+    steps:
+      # 1. 拉取仓库代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 设置 Docker 构建环境（兼容多架构）
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. 生成镜像标签（和原项目保持一致）
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/mermaid-js/mermaid-live-editor
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref_name == 'master' }}
+            type=raw,value=nightly,enable=${{ github.ref_name == 'develop' }}
+
+      # 4. 构建 Docker 镜像（仅构建，不推送）
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: mermaid
+          push: false  # 仅构建，不推送到仓库
+          platforms: linux/amd64,linux/arm64
+          pull: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true  # 关键：将构建好的镜像加载到本地 Docker 环境
+
+      # 5. 导出 Docker 镜像为 tar 文件
+      - name: Export Docker image to tar
+        run: |
+          # 获取镜像标签（优先 latest，其次 nightly）
+          if [[ "${{ github.ref_name }}" == "master" ]]; then
+            IMAGE_TAG="latest"
+          else
+            IMAGE_TAG="nightly"
+          fi
+          # 导出镜像为 tar 文件（包含多架构）
+          docker save ghcr.io/mermaid-js/mermaid-live-editor:${IMAGE_TAG} -o mermaid-live-editor-${IMAGE_TAG}.tar
+          # 压缩 tar 文件（减小体积，方便下载）
+          gzip mermaid-live-editor-${IMAGE_TAG}.tar
+
+      # 6. 上传镜像文件为 Artifact（核心：让你能直接下载）
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mermaid-live-editor-image-${{ github.ref_name }}
+          path: mermaid-live-editor-*.tar.gz
+          retention-days: 90  # 保留 90 天，足够下载
+          if-no-files-found: error  # 无文件则报错，避免空包
