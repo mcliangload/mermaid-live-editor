@@ -47,7 +47,7 @@ jobs:
           context: .
           target: mermaid
           push: false  # 仅构建，不推送到仓库
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           pull: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
