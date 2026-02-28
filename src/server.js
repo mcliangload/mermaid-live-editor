@@ -46,7 +46,7 @@ if (process.env.NODE_ENV === 'production') {
 // --------------------------
 // 4. 启动服务
 // --------------------------
-const PORT = 8081;
+const PORT = 8080;
 const HOST = '0.0.0.0';
 server.listen(PORT, HOST, () => {
   console.log(`Server running at http://${HOST}:${PORT}`);
