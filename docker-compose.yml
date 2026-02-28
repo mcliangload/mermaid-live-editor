@@ -1,11 +1,13 @@
 version: '3.7'
 services:
-  mermaid:
+  mermaid-prod:
     build:
       context: .
-      target: mermaid-dev
-    volumes:
-      - ./src:/app/src
+      target: mermaid  # 生产阶段构建目标（Node后端）
     ports:
-      - 3000:3000
-      - 24678:24678
+      - 8080:8080     # 仅暴露后端服务端口（托管前端+实时协作）
+    environment:
+      - NODE_ENV=production  # 生产环境必需
+    restart: unless-stopped
+    volumes:
+      - ./dist:/app/dist  # 可选：挂载构建产物，避免重复构建
