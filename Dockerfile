@@ -10,7 +10,7 @@ WORKDIR /app
 COPY ./package.json .
 COPY ./pnpm-lock.yaml .
 
-RUN pnpm install --prod --no-frozen-lockfile
+RUN pnpm install
 
 FROM mermaid-live-editor-dependencies AS mermaid-live-editor-builder
 
