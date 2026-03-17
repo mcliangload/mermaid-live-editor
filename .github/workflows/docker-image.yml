@@ -52,6 +52,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           load: true  # 关键：将构建好的镜像加载到本地 Docker 环境
+          build-args: |
+            MERMAID_IS_ENABLED_MERMAID_CHART_LINKS=true
 
       # 5. 导出 Docker 镜像为 tar 文件
       - name: Export Docker image to tar
